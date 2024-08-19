@@ -1,0 +1,35 @@
+services:
+  docker:
+    image: docker:latest
+    privileged: true
+    network_mode: host
+    ports:
+      - "2375-2376"
+    volumes:
+      - ./certs:/certs
+  development:
+    build:
+      context: .
+      dockerfile: Dockerfile.terraform
+    privileged: true
+    network_mode: host
+    extra_hosts:
+      - "docker:127.0.0.1"
+    depends_on:
+      docker:
+        condition: service_started
+    volumes:
+      - ./:/app
+      - ./certs:/certs
+    environment:
+      # Variables required to connect to the Docker daemon
+      - DOCKER_HOST=tcp://docker:2376
+      - DOCKER_TLS_VERIFY=1
+      - DOCKER_CERT_PATH=/certs/client
+  packer:
+    build:
+      context: .
+      dockerfile: Dockerfile.packer
+    network_mode: host
+    volumes:
+      - ./:/app

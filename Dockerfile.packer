@@ -1,0 +1,28 @@
+FROM ubuntu:20.04
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y openvpn \
+    wget \
+    unzip \
+    curl \
+    sshpass \
+    openssh-client \
+    python3-pip \
+    git \
+    apt-transport-https \
+    software-properties-common
+
+# https://learn.microsoft.com/en-us/powershell/scripting/install/install-ubuntu?view=powershell-7.4
+RUN wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb && \
+    dpkg -i packages-microsoft-prod.deb && \
+    rm packages-microsoft-prod.deb && \
+    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y powershell
+
+RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+# https://developer.hashicorp.com/packer/install#linux
+RUN curl -fsSL -o packer.zip https://releases.hashicorp.com/packer/1.10.2/packer_1.10.2_linux_amd64.zip && \
+    unzip -q packer.zip && rm packer.zip && \
+    install -m 0755 packer /usr/bin/packer
+
+WORKDIR /app
