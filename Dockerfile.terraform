@@ -1,13 +1,12 @@
-FROM docker:latest
+FROM docker:28.4.0-alpine3.22
 
-RUN apk add --no-cache bash vim openvpn wget unzip curl sshpass openssh-client python3 py3-pip git github-cli jq groff mandoc
+RUN apk add --no-cache bash vim openvpn wget unzip curl sshpass openssh-client python3 py3-pip git github-cli jq groff mandoc libc6-compat aws-cli
 
 # https://stackoverflow.com/a/77334728/3899136
 RUN echo "[global]" >> /etc/pip.conf && echo "break-system-packages = true" >> /etc/pip.conf
-RUN pip3 install awscli
 
 # Latest Terraform version
-ARG TERRAFORM_VERSION=1.9.4
+ARG TERRAFORM_VERSION=1.13.3
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
         TERRAFORM_ARCH="amd64"; \
