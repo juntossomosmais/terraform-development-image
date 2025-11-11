@@ -6,7 +6,7 @@ RUN apk add --no-cache bash vim openvpn wget unzip curl sshpass openssh-client p
 RUN echo "[global]" >> /etc/pip.conf && echo "break-system-packages = true" >> /etc/pip.conf
 
 # Latest Terraform version
-ARG TERRAFORM_VERSION=1.13.3
+ARG TERRAFORM_VERSION=1.13.5
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
         TERRAFORM_ARCH="amd64"; \
@@ -44,5 +44,8 @@ RUN ARCH=$(uname -m) && \
     fi
 
 RUN apk add --no-cache postgresql-client
+
+# https://github.com/databricks/setup-cli/tags
+RUN curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/refs/tags/v0.276.0/install.sh | sh
 
 WORKDIR /app
