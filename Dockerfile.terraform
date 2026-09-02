@@ -1,9 +1,9 @@
 FROM docker:28.5.0-alpine3.22
 
-RUN apk add --no-cache bash vim openvpn wget unzip curl sshpass openssh-client python3 py3-pip git github-cli jq groff mandoc libc6-compat aws-cli
+RUN apk add --no-cache bash vim openvpn wget unzip curl sshpass openssh-client python3 py3-pip git github-cli jq groff mandoc libc6-compat aws-cli postgresql-client
 
 # https://stackoverflow.com/a/77334728/3899136
-RUN echo "[global]" >> /etc/pip.conf && echo "break-system-packages = true" >> /etc/pip.conf
+RUN printf '[global]\nbreak-system-packages = true\n' > /etc/pip.conf
 
 # Latest Terraform version
 # https://github.com/hashicorp/terraform/releases
@@ -16,23 +16,27 @@ RUN ARCH=$(uname -m) && \
     else \
         echo "Unsupported architecture: $ARCH"; exit 1; \
     fi && \
-    wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TERRAFORM_ARCH}.zip && \
-    unzip terraform_${TERRAFORM_VERSION}_linux_${TERRAFORM_ARCH}.zip -d /usr/local/bin/ && \
-    rm terraform_${TERRAFORM_VERSION}_linux_${TERRAFORM_ARCH}.zip
+    wget -q -O /tmp/terraform.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TERRAFORM_ARCH}.zip && \
+    unzip -q /tmp/terraform.zip -d /usr/local/bin/ && \
+    rm -rf /tmp/terraform.zip /root/.wget-hsts
 
 # Azure CLI
 # https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=script
 # https://github.com/Azure/azure-cli/issues/24872
+# --no-compile keeps the ~300MB of .pyc out of the image; CPython regenerates on
+# demand at runtime (only the modules each command touches, a few MB).
 RUN apk add --no-cache -q --virtual=build gcc musl-dev python3-dev libffi-dev openssl-dev cargo make \
-     && pip install --no-cache-dir azure-cli -q \
-     && apk del --purge build
+     && pip install --no-cache-dir --no-compile azure-cli -q \
+     && apk del --purge build \
+     && find /usr/lib/python3.12/site-packages/azure -depth -name __pycache__ -type d -exec rm -rf {} + \
+     && rm -rf /root/.cargo /root/.cache /tmp/*
 
 # Install kubelogin
-RUN az aks install-cli
-
-RUN apk add --no-cache postgresql-client
+RUN az aks install-cli \
+     && rm -rf /root/.azure /tmp/*
 
 # https://github.com/databricks/setup-cli/tags
-RUN curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/refs/tags/v0.299.0/install.sh | sh
+RUN curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/refs/tags/v0.299.0/install.sh | sh \
+     && rm -rf /tmp/*
 
 WORKDIR /app
